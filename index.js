@@ -24,6 +24,8 @@
  */
 const path = require('path');
 
+const fs = require('fs');
+
 const kernelspecs = require('kernelspecs');
 const jp = require('jupyter-paths');
 
@@ -142,18 +144,29 @@ function launchSpec(kernelSpec, options) {
  */
 function launch(kernelName, specs) {
   // Let them pass in a cached specs file
-  if(!specs) {
+  if (!specs) {
     return kernelspecs.findAll()
                       .then((sp) => launch(kernelName, sp));
   }
-  if(!specs[kernelName]) {
+  if (!specs[kernelName]) {
     return Promise.reject(new Error(`No spec available for ${kernelName}`));
   }
   const spec = specs[kernelName].spec;
   return launchSpec(spec);
 }
 
+/**
+ * cleanup a spawned kernel that was launched via spawnteract
+ * @param  {ChildProcess} spawn      spawned process
+ * @param  {string} connectionFile   connection file path
+ */
+function forceCleanup(spawn, connectionFile) {
+  spawn.kill('SIGKILL');
+  fs.unlink(connectionFile);
+}
+
 module.exports = {
+  forceCleanup,
   launch,
   launchSpec,
   writeConnectionFile,
