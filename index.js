@@ -59,21 +59,22 @@ function _createConnectionConfig(ports) {
 /**
  * Write a connection file
  * @public
- * @param  {object} [options]                     connection options
- * @param  {number} [options.port]
- * @param  {string} [options.host]
+ * @param  {object} [portFinderOptions]           connection options
+ *                                                see {@link https://github.com/indexzero/node-portfinder/blob/master/lib/portfinder.js }
+ * @param  {number} [portFinderOptions.port]
+ * @param  {string} [portFinderOptions.host]
  * @return {object} configResults
  * @return {object} configResults.config          connectionConfig
  * @return {string} configResults.connectionFile  path to the config file
  */
-function writeConnectionFile(options) {
-  options = options || {};
+function writeConnectionFile(portFinderOptions) {
+  const options = Object.assign({}, portFinderOptions);
   options.port = options.port || 9000;
   options.host = options.host || '127.0.0.1';
 
   return new Promise((resolve, reject) => {
     getPorts(5, options, (err, ports) => {
-      if(err) {
+      if (err) {
         reject(err);
       } else {
         // Make sure the kernel runtime dir exists before trying to write the
@@ -85,7 +86,7 @@ function writeConnectionFile(options) {
         const config = _createConnectionConfig(ports);
         const connectionFile = path.join(jp.runtimeDir(), `kernel-${uuid.v4()}.json`);
         jsonfile.writeFile(connectionFile, config, (jsonErr) => {
-          if(jsonErr) {
+          if (jsonErr) {
             reject(jsonErr);
           } else {
             resolve({
@@ -102,23 +103,26 @@ function writeConnectionFile(options) {
 /**
  * Launch a kernel for a given kernelSpec
  * @public
- * @param  {object}       kernelSpec                   describes a specific
- *                                                     kernel, see the npm
- *                                                     package `kernelspecs`
- * @param  {object}       [options]                    connection options
- * @param  {number}       [options.port]
- * @param  {string}       [options.host]
+ * @param  {object}       kernelSpec      describes a specific
+ *                                        kernel, see the npm
+ *                                        package `kernelspecs`
+ * @param  {object} [portFinderOptions]           connection options
+ *                                                see {@link https://github.com/indexzero/node-portfinder/blob/master/lib/portfinder.js }
+ * @param  {number} [portFinderOptions.port]
+ * @param  {string} [portFinderOptions.host]
+ * @param  {object}       [spawnOptions]  options for [child_process.spawn]{@link https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options}
  * @return {object}       spawnResults
  * @return {ChildProcess} spawnResults.spawn           spawned process
  * @return {string}       spawnResults.connectionFile  connection file path
  * @return {object}       spawnResults.config          connectionConfig
+ *
  */
-function launchSpec(kernelSpec, options) {
-  return writeConnectionFile(options).then((c) => {
+function launchSpec(kernelSpec, portFinderOptions, spawnOptions) {
+  return writeConnectionFile(portFinderOptions).then((c) => {
     const connectionFile = c.connectionFile;
     const config = c.config;
     const argv = kernelSpec.argv.map(x => x === '{connection_file}' ? connectionFile : x);
-    const runningKernel = child_process.spawn(argv[0], argv.slice(1));
+    const runningKernel = child_process.spawn(argv[0], argv.slice(1), spawnOptions);
     return {
       spawn: runningKernel,
       connectionFile,
@@ -135,22 +139,23 @@ function launchSpec(kernelSpec, options) {
  *                                                     objects to look through.
  *                                                     See the npm package
  *                                                     `kernelspecs`
+ * @param  {object}       [spawnOptions]  options for [child_process.spawn]{@link https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options}
  * @return {object}       spawnResults
  * @return {ChildProcess} spawnResults.spawn           spawned process
  * @return {string}       spawnResults.connectionFile  connection file path
  * @return {object}       spawnResults.config          connectionConfig
  */
-function launch(kernelName, specs) {
+function launch(kernelName, specs, spawnOptions) {
   // Let them pass in a cached specs file
-  if(!specs) {
+  if (!specs) {
     return kernelspecs.findAll()
-                      .then((sp) => launch(kernelName, sp));
+                      .then((sp) => launch(kernelName, sp, spawnOptions));
   }
-  if(!specs[kernelName]) {
+  if (!specs[kernelName]) {
     return Promise.reject(new Error(`No spec available for ${kernelName}`));
   }
   const spec = specs[kernelName].spec;
-  return launchSpec(spec);
+  return launchSpec(spec, {}, spawnOptions);
 }
 
 module.exports = {
