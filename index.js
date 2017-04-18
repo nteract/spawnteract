@@ -24,6 +24,8 @@
  */
 const path = require('path');
 
+const fs = require('fs');
+
 const kernelspecs = require('kernelspecs');
 const jp = require('jupyter-paths');
 
@@ -157,7 +159,18 @@ function launch(kernelName, spawnOptions, specs) {
   return launchSpec(spec, spawnOptions);
 }
 
+/**
+ * cleanup a spawned kernel that was launched via spawnteract
+ * @param  {ChildProcess} spawn      spawned process
+ * @param  {string} connectionFile   connection file path
+ */
+function forceCleanup(spawn, connectionFile) {
+  spawn.kill('SIGKILL');
+  fs.unlink(connectionFile);
+}
+
 module.exports = {
+  forceCleanup,
   launch,
   launchSpec,
 };
