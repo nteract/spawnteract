@@ -14,16 +14,16 @@
     "url": "https://github.com/nteract/spawnteract.git"
   },
   "dependencies": {
-    "jsonfile": "^2.2.3",
+    "jsonfile": "^3.0.0",
     "jupyter-paths": "^1.0.0",
     "kernelspecs": "^1.0.0",
     "mkdirp": "^0.5.1",
-    "portfinder": "^1.0.7",
+    "portfinder": "^1.0.13",
     "uuid": "^3.0.1"
   },
   "devDependencies": {
-    "chai": "^3.5.0",
+    "chai": "^4.0.1",
     "jsdoc": "^3.4.0",
-    "mocha": "^3.0.2"
+    "mocha": "^3.4.2"
   }
 }
