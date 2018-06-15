@@ -23,6 +23,7 @@
  *
  */
 const path = require("path");
+const fs = require("fs");
 
 const kernelspecs = require("kernelspecs");
 const jp = require("jupyter-paths");
@@ -33,6 +34,14 @@ const jsonfile = require("jsonfile");
 
 const execa = require("execa");
 const mkdirp = require("mkdirp");
+
+function cleanup(connectionFile) {
+  try {
+    fs.unlinkSync(connectionFile);
+  } catch (e) {
+    return;
+  }
+}
 
 /**
  * Creates a connectionInfo object given an array of ports
@@ -164,6 +173,10 @@ function launchSpecFromConnectionInfo(
   );
 
   const runningKernel = execa(argv[0], argv.slice(1), fullSpawnOptions);
+
+  runningKernel.on("exit", (code, signal) => cleanup(connectionFile));
+  runningKernel.on("error", (code, signal) => cleanup(connectionFile));
+
   return {
     spawn: runningKernel,
     connectionFile,
