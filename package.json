@@ -14,6 +14,7 @@
     "url": "https://github.com/nteract/spawnteract.git"
   },
   "dependencies": {
+    "execa": "^0.10.0",
     "jsonfile": "^3.0.0",
     "jupyter-paths": "^2.0.0",
     "kernelspecs": "^2.0.0",

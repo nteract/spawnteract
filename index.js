@@ -23,6 +23,7 @@
  *
  */
 const path = require("path");
+const fs = require("fs");
 
 const kernelspecs = require("kernelspecs");
 const jp = require("jupyter-paths");
@@ -31,8 +32,16 @@ const uuid = require("uuid");
 const getPorts = require("portfinder").getPorts;
 const jsonfile = require("jsonfile");
 
-const child_process = require("child_process");
+const execa = require("execa");
 const mkdirp = require("mkdirp");
+
+function cleanup(connectionFile) {
+  try {
+    fs.unlinkSync(connectionFile);
+  } catch (e) {
+    return;
+  }
+}
 
 /**
  * Creates a connectionInfo object given an array of ports
@@ -109,7 +118,7 @@ function writeConnectionFile(portFinderOptions) {
  * @param  {object}       kernelSpec      describes a specific
  *                                        kernel, see the npm
  *                                        package `kernelspecs`
- * @param  {object}       [spawnOptions]  options for [child_process.spawn]{@link https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options}
+ * @param  {object}       [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
  * @return {object}       spawnResults
  * @return {ChildProcess} spawnResults.spawn           spawned process
  * @return {string}       spawnResults.connectionFile  connection file path
@@ -135,7 +144,7 @@ function launchSpec(kernelSpec, spawnOptions) {
  *                                        package `kernelspecs`
  * @param  {object}       config          connection config
  * @param  {string}       connectionFile  path to the config file
- * @param  {object}       [spawnOptions]  options for [child_process.spawn]{@link https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options}
+ * @param  {object}       [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
  * @return {object}       spawnResults
  * @return {ChildProcess} spawnResults.spawn           spawned process
  * @return {string}       spawnResults.connectionFile  connection file path
@@ -163,11 +172,11 @@ function launchSpecFromConnectionInfo(
     spawnOptions
   );
 
-  const runningKernel = child_process.spawn(
-    argv[0],
-    argv.slice(1),
-    fullSpawnOptions
-  );
+  const runningKernel = execa(argv[0], argv.slice(1), fullSpawnOptions);
+
+  runningKernel.on("exit", (code, signal) => cleanup(connectionFile));
+  runningKernel.on("error", (code, signal) => cleanup(connectionFile));
+
   return {
     spawn: runningKernel,
     connectionFile,
@@ -184,7 +193,7 @@ function launchSpecFromConnectionInfo(
  *                                                     objects to look through.
  *                                                     See the npm package
  *                                                     `kernelspecs`
- * @param  {object}       [spawnOptions]  options for [child_process.spawn]{@link https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options}
+ * @param  {object}       [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
  * @return {object}       spawnResults
  * @return {ChildProcess} spawnResults.spawn           spawned process
  * @return {string}       spawnResults.connectionFile  connection file path

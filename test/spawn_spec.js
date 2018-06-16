@@ -5,19 +5,29 @@ const launch = require("../").launch;
 const kernelspecs = require("kernelspecs");
 
 describe("launch", () => {
-  it("spawns a kernel", () => {
-    return kernelspecs
+  let spawnResult;
+  it("spawns a kernel", done => {
+    kernelspecs
       .findAll()
       .then(kernels => {
         const kernel = kernels.python2 || kernels.python3;
         return launch(kernel.name);
       })
       .then(c => {
+        spawnResult = c;
         expect(c).to.not.be.null;
         expect(c.spawn).to.not.be.null;
-
+        expect(fs.existsSync(c.connectionFile)).to.be.true;
         c.spawn.kill();
-        fs.unlinkSync(c.connectionFile);
+        done();
       });
+  });
+
+  it("cleans up connection files", done => {
+    const { connectionFile } = spawnResult;
+    setTimeout(() => {
+      expect(fs.existsSync(connectionFile)).to.be.false;
+      done();
+    }, 100);
   });
 });
