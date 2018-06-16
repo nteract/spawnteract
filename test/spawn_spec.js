@@ -23,8 +23,11 @@ describe("launch", () => {
       });
   });
 
-  it("cleans up connection files", () => {
+  it("cleans up connection files", done => {
     const { connectionFile } = spawnResult;
-    expect(fs.existsSync(connectionFile)).to.be.false;
+    setTimeout(() => {
+      expect(fs.existsSync(connectionFile)).to.be.false;
+      done();
+    }, 100);
   });
 });
