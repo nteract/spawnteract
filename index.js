@@ -118,7 +118,8 @@ function writeConnectionFile(portFinderOptions) {
  * @param  {object}       kernelSpec      describes a specific
  *                                        kernel, see the npm
  *                                        package `kernelspecs`
- * @param  {object}       [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
+ * @param  {object}       [spawnOptions] `child_process`-like {@link https://github.com/sindresorhus/execa#options options for execa}
+ *                                        use `{ cleanupConnectionFile: false }` to disable automatic connection file cleanup
  * @return {object}       spawnResults
  * @return {ChildProcess} spawnResults.spawn           spawned process
  * @return {string}       spawnResults.connectionFile  connection file path
@@ -145,6 +146,7 @@ function launchSpec(kernelSpec, spawnOptions) {
  * @param  {object}       config          connection config
  * @param  {string}       connectionFile  path to the config file
  * @param  {object}       [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
+ *                                         use `{ cleanupConnectionFile: false }` to disable automatic connection file cleanup
  * @return {object}       spawnResults
  * @return {ChildProcess} spawnResults.spawn           spawned process
  * @return {string}       spawnResults.connectionFile  connection file path
@@ -162,21 +164,24 @@ function launchSpecFromConnectionInfo(
   );
 
   const defaultSpawnOptions = {
-    stdio: "ignore"
+    stdio: "ignore",
+    cleanupConnectionFile: true
   };
   const env = Object.assign({}, process.env, kernelSpec.env);
   const fullSpawnOptions = Object.assign(
     {},
     defaultSpawnOptions,
+    // TODO: see if this interferes with what execa assigns to the env option
     { env: env },
     spawnOptions
   );
 
   const runningKernel = execa(argv[0], argv.slice(1), fullSpawnOptions);
 
-  runningKernel.on("exit", (code, signal) => cleanup(connectionFile));
-  runningKernel.on("error", (code, signal) => cleanup(connectionFile));
-
+  if (fullSpawnOptions.cleanupConnectionFile !== false) {
+    runningKernel.on("exit", (code, signal) => cleanup(connectionFile));
+    runningKernel.on("error", (code, signal) => cleanup(connectionFile));
+  }
   return {
     spawn: runningKernel,
     connectionFile,
@@ -194,6 +199,7 @@ function launchSpecFromConnectionInfo(
  *                                                     See the npm package
  *                                                     `kernelspecs`
  * @param  {object}       [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
+ *                                        use `{ cleanupConnectionFile: false }` to disable automatic connection file cleanup
  * @return {object}       spawnResults
  * @return {ChildProcess} spawnResults.spawn           spawned process
  * @return {string}       spawnResults.connectionFile  connection file path
