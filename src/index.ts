@@ -14,7 +14,7 @@
  * You'll need to close `spawnResults.spawn` yourself as well as delete
  * `spawnResults.connectionFile` from disk when finished.
  *
- * @exports spawnteract
+ * @module spawnteract
  */
 
 /* eslint camelcase: 0 */
@@ -157,8 +157,8 @@ function launchSpecFromConnectionInfo(
   connectionFile,
   spawnOptions
 ) {
-  const argv = kernelSpec.argv.map(
-    x => (x === "{connection_file}" ? connectionFile : x)
+  const argv = kernelSpec.argv.map(x =>
+    x === "{connection_file}" ? connectionFile : x
   );
 
   const defaultSpawnOptions = {
