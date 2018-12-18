@@ -19,23 +19,17 @@
 
 /* eslint camelcase: 0 */
 // ^--- #justjupyterthings
-/**
- *
- */
-const path = require("path");
-const fs = require("fs");
+import * as path from "path";
+import * as fs from "fs";
+import * as kernelspecs from "kernelspecs";
+import * as jp from "jupyter-paths";
+import { v4 as uuidv4 } from "uuid";
+import { getPorts, PortFinderOptions } from "portfinder";
+import * as jsonfile from "jsonfile";
+import * as execa from "execa";
+import * as mkdirp from "mkdirp";
 
-const kernelspecs = require("kernelspecs");
-const jp = require("jupyter-paths");
-
-const uuid = require("uuid");
-const getPorts = require("portfinder").getPorts;
-const jsonfile = require("jsonfile");
-
-const execa = require("execa");
-const mkdirp = require("mkdirp");
-
-function cleanup(connectionFile) {
+function cleanup(connectionFile: string) {
   try {
     fs.unlinkSync(connectionFile);
   } catch (e) {
@@ -43,17 +37,28 @@ function cleanup(connectionFile) {
   }
 }
 
+type PortsArray = [number, number, number, number, number];
+
+type ConnectionInfo = {
+  version: 5;
+  key: string;
+  signature_scheme: string;
+  transport: "tcp" | "ipc";
+  ip: string;
+  hb_port: number;
+  control_port: number;
+  shell_port: number;
+  stdin_port: number;
+  iopub_port: number;
+};
+
 /**
  * Creates a connectionInfo object given an array of ports
- * @private
- * @param  {number[]} ports array of ports to use for the connection, [hb_port,
- *                          control_port, shell_port, stdin_port, iopub_port]
- * @return {object}         connectionInfo object
  */
-function createConnectionInfo(ports) {
+function createConnectionInfo(ports: PortsArray): ConnectionInfo {
   return {
     version: 5,
-    key: uuid.v4(),
+    key: uuidv4(),
     signature_scheme: "hmac-sha256",
     transport: "tcp",
     ip: "127.0.0.1",
@@ -65,24 +70,23 @@ function createConnectionInfo(ports) {
   };
 }
 
+type ConnectionFileResponse = {
+  config: ConnectionInfo;
+  connectionFile: string;
+};
+
 /**
- * Write a connection file
- * @public
- * @param  {object} [portFinderOptions]           connection options
- *                                                see {@link https://github.com/indexzero/node-portfinder/blob/master/lib/portfinder.js }
- * @param  {number} [portFinderOptions.port]
- * @param  {string} [portFinderOptions.host]
- * @return {object} configResults
- * @return {object} configResults.config          connection info
- * @return {string} configResults.connectionFile  path to the connection file
+ * Write a connection file to disk with found ports
  */
-function writeConnectionFile(portFinderOptions) {
+function writeConnectionFile(
+  portFinderOptions?: PortFinderOptions
+): Promise<ConnectionFileResponse> {
   const options = Object.assign({}, portFinderOptions);
   options.port = options.port || 9000;
   options.host = options.host || "127.0.0.1";
 
   return new Promise((resolve, reject) => {
-    getPorts(5, options, (err, ports) => {
+    getPorts(5, options, (err: Error, ports: PortsArray) => {
       if (err) {
         reject(err);
       } else {
@@ -95,7 +99,7 @@ function writeConnectionFile(portFinderOptions) {
         const config = createConnectionInfo(ports);
         const connectionFile = path.join(
           jp.runtimeDir(),
-          `kernel-${uuid.v4()}.json`
+          `kernel-${uuidv4()}.json`
         );
         jsonfile.writeFile(connectionFile, config, jsonErr => {
           if (jsonErr) {
@@ -114,47 +118,24 @@ function writeConnectionFile(portFinderOptions) {
 
 /**
  * Launch a kernel for a given kernelSpec
- * @public
- * @param  {object}       kernelSpec      describes a specific
- *                                        kernel, see the npm
- *                                        package `kernelspecs`
- * @param  {object}       [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
- * @return {object}       spawnResults
- * @return {ChildProcess} spawnResults.spawn           spawned process
- * @return {string}       spawnResults.connectionFile  connection file path
- * @return {object}       spawnResults.config          connection info
- *
  */
-function launchSpec(kernelSpec, spawnOptions) {
-  return writeConnectionFile().then(c => {
-    return launchSpecFromConnectionInfo(
-      kernelSpec,
-      c.config,
-      c.connectionFile,
-      spawnOptions
-    );
-  });
+async function launchSpec(kernelSpec, spawnOptions) {
+  const { config, connectionFile } = await writeConnectionFile();
+  return launchSpecFromConnectionInfo(
+    kernelSpec,
+    config,
+    connectionFile,
+    spawnOptions
+  );
 }
 
 /**
  * Launch a kernel for a given kernelSpec and connection info
- * @public
- * @param  {object}       kernelSpec      describes a specific
- *                                        kernel, see the npm
- *                                        package `kernelspecs`
- * @param  {object}       config          connection config
- * @param  {string}       connectionFile  path to the config file
- * @param  {object}       [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
- * @return {object}       spawnResults
- * @return {ChildProcess} spawnResults.spawn           spawned process
- * @return {string}       spawnResults.connectionFile  connection file path
- * @return {object}       spawnResults.config          connection info
- *
  */
 function launchSpecFromConnectionInfo(
   kernelSpec,
-  config,
-  connectionFile,
+  config: ConnectionInfo,
+  connectionFile: string,
   spawnOptions
 ) {
   const argv = kernelSpec.argv.map(x =>
@@ -187,19 +168,8 @@ function launchSpecFromConnectionInfo(
 
 /**
  * Launch a kernel by name
- * @public
- * @param  {string}       kernelName
- * @param  {object[]}     [specs]                      array of kernelSpec
- *                                                     objects to look through.
- *                                                     See the npm package
- *                                                     `kernelspecs`
- * @param  {object}       [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
- * @return {object}       spawnResults
- * @return {ChildProcess} spawnResults.spawn           spawned process
- * @return {string}       spawnResults.connectionFile  connection file path
- * @return {object}       spawnResults.config          connection info
  */
-function launch(kernelName, spawnOptions, specs) {
+function launch(kernelName: string, spawnOptions, specs) {
   // Let them pass in a cached specs file
   if (!specs) {
     return kernelspecs

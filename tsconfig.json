@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "./lib",
+    "target": "ES2016"
+  },
+  "include": ["./src/**/*"]
+}
