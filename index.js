@@ -160,7 +160,7 @@ function launchSpecFromConnectionInfo(
   spawnOptions
 ) {
   const argv = kernelSpec.argv.map(
-    x => (x === "{connection_file}" ? connectionFile : x)
+    x => (x.replace("{connection_file}", connectionFile))
   );
 
   const defaultSpawnOptions = {
