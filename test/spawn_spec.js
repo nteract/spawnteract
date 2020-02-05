@@ -56,4 +56,19 @@ describe("launch", () => {
       done();
     }, 100);
   });
+
+  it("processes env variables", done => {
+    kernelspecs
+      .findAll()
+      .then(kernels => {
+        const kernel = kernels.python2 || kernels.python3;
+        kernelName = kernel.name;
+        return launch(kernelName, {env: {FOOBAR:"BAZ"}});
+      }).then(c => {
+       // console.log(c.spawn.pid);
+       // TODO write an actual test to see if FOOBAR is set -- at least we know it doesn't throw if env is set
+       c.spawn.kill();
+       done();
+    })
+  })
 });

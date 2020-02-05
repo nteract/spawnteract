@@ -159,21 +159,24 @@ function launchSpecFromConnectionInfo(
   connectionFile,
   spawnOptions
 ) {
-  const argv = kernelSpec.argv.map(
-    x => (x.replace("{connection_file}", connectionFile))
+  const argv = kernelSpec.argv.map(x =>
+    x.replace("{connection_file}", connectionFile)
   );
 
   const defaultSpawnOptions = {
     stdio: "ignore",
     cleanupConnectionFile: true
   };
-  const env = Object.assign({}, process.env, kernelSpec.env);
-  const fullSpawnOptions = Object.assign(
+
+  const fullSpawnOptions = Object.assign({}, defaultSpawnOptions, spawnOptions);
+
+  // TODO: see if this interferes with what execa assigns to the env option
+  // issue #40: merge all env variables without replacing env by spawnOptions.env
+  fullSpawnOptions.env = Object.assign(
     {},
-    defaultSpawnOptions,
-    // TODO: see if this interferes with what execa assigns to the env option
-    { env: env },
-    spawnOptions
+    process.env,
+    kernelSpec.env,
+    (spawnOptions || {}).env
   );
 
   const runningKernel = execa(argv[0], argv.slice(1), fullSpawnOptions);
