@@ -138,6 +138,29 @@ function launchSpec(kernelSpec, spawnOptions) {
 }
 
 /**
+ * This computes the SpawnOptions environment.
+ * It merges all environment variables in a specific precedence ordering.
+ * The process itself, then the kernelspecs's env from kernel.json,
+ * and then any overrides passed to spawnteract's spawnOptions.env configuration.
+ *
+ * related issue #40: merge all env variables without replacing env by spawnOptions.env
+ *
+ * @param  {object}       kernelSpec
+ * @param  {object}       spawnOptions
+ *
+ * @return {object}       computed environment variables
+ */
+
+function computeSpawnOptionsEnv(kernelSpec, spawnOptions) {
+  return Object.assign(
+    {},
+    process.env,
+    (kernelSpec.spec || {}).env,
+    (spawnOptions || {}).env
+  );
+}
+
+/**
  * Launch a kernel for a given kernelSpec and connection info
  * @public
  * @param  {object}       kernelSpec      describes a specific
@@ -171,13 +194,7 @@ function launchSpecFromConnectionInfo(
   const fullSpawnOptions = Object.assign({}, defaultSpawnOptions, spawnOptions);
 
   // TODO: see if this interferes with what execa assigns to the env option
-  // issue #40: merge all env variables without replacing env by spawnOptions.env
-  fullSpawnOptions.env = Object.assign(
-    {},
-    process.env,
-    kernelSpec.env,
-    (spawnOptions || {}).env
-  );
+  fullSpawnOptions.env = computeSpawnOptionsEnv(kernelSpec, spawnOptions);
 
   const runningKernel = execa(argv[0], argv.slice(1), fullSpawnOptions);
 
@@ -225,5 +242,6 @@ function launch(kernelName, spawnOptions, specs) {
 module.exports = {
   launch,
   launchSpec,
-  launchSpecFromConnectionInfo
+  launchSpecFromConnectionInfo,
+  computeSpawnOptionsEnv // for testing
 };
