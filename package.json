@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --recursive",
-    "build:docs": "jsdoc -R README.md -d docs index.js"
+    "build:docs": "jsdoc -R README.md -d docs index.js",
+    "semantic-release": "semantic-release"
   },
   "author": "Kyle Kelley <rgbkrk@gmail.com>",
   "license": "BSD-3-Clause",
