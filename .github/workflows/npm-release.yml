@@ -11,9 +11,9 @@ jobs:
           python-version: 3.8
       # Install an ipykernel so it is available for tests
       - run: |
-          python3 -m pip install --upgrade pip
-          pip3 install setuptools ipykernel --upgrade
-          python3 -m ipykernel install --user
+          python -m pip install --upgrade pip
+          python -m pip install setuptools ipykernel --upgrade
+          python -m ipykernel install --user
       - run: npm ci
       - run: npm test
       - name: Release
