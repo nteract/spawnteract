@@ -10,8 +10,10 @@ jobs:
           node-version: '12'
           python-version: 3.8
       # Install an ipykernel so it is available for tests
-      - run: pip install setuptools pip ipykernel --upgrade
-      - run: python -m ipykernel install --user
+      - run: |
+          python -m pip install --upgrade pip
+          pip install setuptools pip ipykernel --upgrade
+          python -m ipykernel install --user
       - run: npm ci
       - run: npm test
       - name: Release
