@@ -32,8 +32,8 @@ const uuid = require("uuid");
 const getPorts = require("portfinder").getPorts;
 const jsonfile = require("jsonfile");
 
-const execa = require("execa");
 const mkdirp = require("mkdirp");
+const { spawn } = require("child_process")
 
 function cleanup(connectionFile) {
   try {
@@ -168,7 +168,7 @@ function computeSpawnOptionsEnv(kernelSpec, spawnOptions) {
  *                                        package `kernelspecs`
  * @param  {object}       config          connection config
  * @param  {string}       connectionFile  path to the config file
- * @param  {object}       [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
+ * @param  {import("child_process").SpawnOptions} [spawnOptions]  `child_process`-like options for [execa]{@link https://github.com/sindresorhus/execa#options}
  *                                         use `{ cleanupConnectionFile: false }` to disable automatic connection file cleanup
  * @return {object}       spawnResults
  * @return {ChildProcess} spawnResults.spawn           spawned process
@@ -196,7 +196,7 @@ function launchSpecFromConnectionInfo(
   // TODO: see if this interferes with what execa assigns to the env option
   fullSpawnOptions.env = computeSpawnOptionsEnv(kernelSpec, spawnOptions);
 
-  const runningKernel = execa(argv[0], argv.slice(1), fullSpawnOptions);
+  const runningKernel = spawn(argv[0], argv.slice(1), fullSpawnOptions);
 
   if (fullSpawnOptions.cleanupConnectionFile !== false) {
     runningKernel.on("exit", (code, signal) => cleanup(connectionFile));
