@@ -28,7 +28,7 @@
     "chai": "^4.0.1",
     "conventional-changelog-conventionalcommits": "^4.6.0",
     "jsdoc": "^3.4.0",
-    "mocha": "^3.4.2",
+    "mocha": "^10.2.0",
     "semantic-release": "^17.4.3"
   },
   "release": {
